@@ -131,7 +131,7 @@ def try_schedule_weekly_batch(tasks, start_day, last_day, festive_days,
     # deep copy
     tasks = copy.deepcopy(tasks)
     # shuffle
-    random.shuffle(tasks)
+    # random.shuffle(tasks)
     n_tasks = len(tasks)
     assigned_count = 0
 
@@ -280,8 +280,8 @@ def generate_vacation_schedule(df, festive_days, analysis_year=2025):
     total_tasks = len(all_tasks)
 
     # We'll define an upper bound for concurrency (like up to total_tasks or 10)
-    max_concurrency = 3
-    attempts_per_combo = 1000
+    max_concurrency = 5
+    attempts_per_combo = 2000
 
     for concurrency_lvl in range(1, max_concurrency+1):
         for per_week in range(2, total_tasks+1):
@@ -314,7 +314,9 @@ def generate_vacation_schedule(df, festive_days, analysis_year=2025):
                     schedule_df.sort_values(by=['Vacation Start','Nombre Completo','Block #'],
                                             inplace=True)
                     schedule_df.reset_index(drop=True, inplace=True)
+                    print("Proposed Vacation Schedule:\n", schedule_df)
                     return schedule_df
+
     # if we never succeed
     print("Unable to schedule even with concurrency up to 10 and multiple attempts.")
     return pd.DataFrame()
@@ -331,6 +333,16 @@ if __name__ == '__main__':
 
     file_path = os.path.join(base_path, "MORIBUS Personal bodegas.xlsx")
     df = pd.read_excel(file_path, sheet_name="Empleados")
+    df['Fecha Ingreso'] = pd.to_datetime(df['Fecha Ingreso'])
+    df['month'] = df['Fecha Ingreso'].dt.month
+    df = df.sort_values(by='month', ascending=True)
+
+    pd.set_option("display.max_rows", 200)
+    pd.set_option("display.max_columns", None)
+    pd.set_option("display.width", 1000)
+    pd.set_option("display.expand_frame_repr", False)
+
+    print("Payroll:\n", df)
 
     # Example: 1 festive day
     festive_days = [
@@ -339,16 +351,9 @@ if __name__ == '__main__':
 
     schedule_df = generate_vacation_schedule(df, festive_days, analysis_year)
 
-    pd.set_option("display.max_rows", 200)
-    pd.set_option("display.max_columns", None)
-    pd.set_option("display.width", 1000)
-    pd.set_option("display.expand_frame_repr", False)
-
-    print(schedule_df)
-
     out_path = get_base_output_path()
     if out_path:
-        out_file = os.path.join(out_path, f"distribucion_vacaciones_MOBU_{analysis_year}_C2.xlsx")
+        out_file = os.path.join(out_path, f"distribucion_vacaciones_MOBU_{analysis_year}.xlsx")
         schedule_df.to_excel(out_file, index=False)
     else:
         print("No output path found. Skipping save.")
